@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liquidity X</title>
+<style>
+body{background:#0a0a0a;color:#fff;font-family:Inter,sans-serif;margin:0;padding:12px}
+.top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.dot{width:10px;height:10px;background:#00ff88;border-radius:50%;box-shadow:0 0 8px #00ff88}
+.card{background:#151515;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #222}
+.row{display:flex;justify-content:space-between;padding:6px 0}
+.label{color:#aaa} .val{font-weight:600}
+.green{color:#00ff88} .red{color:#ff4d4d} .yellow{color:#ffcc00}
+</style>
+</head>
+<body>
+<div class="top"><div class="dot"></div><div><b>💰 Liquidity X</b><br><small style="color:#888">Bot Controller</small></div><small id="upd" style="margin-left:auto;color:#666">Updating...</small></div>
+
+<div class="card">
+<div class="row"><span class="label">💰 Balance</span><span class="val" id="bal">$0.00</span></div>
+<div class="row"><span class="label">📊 Equity</span><span class="val" id="eq">$0.00</span></div>
+<div class="row"><span class="label">📈 Spread</span><span class="val" id="spr">0.00</span></div>
+<div class="row"><span class="label">🎯 Lot</span><span class="val" id="lot">0.0</span></div>
+</div>
+
+<div class="card">
+<div class="row"><span class="label">H1 Trend</span><span class="val" id="h1">WAIT</span></div>
+<div class="row"><span class="label">M5 Trend</span><span class="val" id="m5">WAIT</span></div>
+<div class="row"><span class="label">💵 P&L</span><span class="val green" id="pnl">$0</span></div>
+<div class="row"><span class="label">📌 Positions</span><span class="val" id="pos">0 / 6</span></div>
+<div class="row"><span class="label">Skip</span><span class="val" id="skip" style="font-size:11px;text-align:right;max-width:60%"></span></div>
+</div>
+
+<div class="card">
+<div style="margin-bottom:8px;color:#aaa">🔔 Signals</div>
+<div class="row"><span>K03</span><span class="val" id="k03">WAIT</span></div>
+<div class="row"><span>K08</span><span class="val" id="k08">WAIT</span></div>
+<div class="row"><span>X05</span><span class="val" id="x05">WAIT</span></div>
+<div class="row"><span>X08</span><span class="val" id="x08">WAIT</span></div>
+<div class="row"><span>K05</span><span class="val" id="k05">WAIT</span></div>
+<div class="row"><span>X03</span><span class="val" id="x03">WAIT</span></div>
+</div>
+
+<script>
+async function load(){
+  try{
+    const r = await fetch('/api/status'); const d = await r.json();
+    document.getElementById('bal').innerText = '$'+d.balance;
+    document.getElementById('eq').innerText = '$'+d.equity;
+    document.getElementById('spr').innerText = d.spread;
+    document.getElementById('lot').innerText = d.lot;
+    document.getElementById('h1').innerText = d.h1_trend;
+    document.getElementById('m5').innerText = d.m5_trend;
+    document.getElementById('pnl').innerText = '$'+d.pnl;
+    document.getElementById('pos').innerText = d.positions;
+    document.getElementById('skip').innerText = d.skip;
+    document.getElementById('k03').innerText = d.signals.K03;
+    document.getElementById('k08').innerText = d.signals.K08;
+    document.getElementById('x05').innerText = d.signals.X05;
+    document.getElementById('x08').innerText = d.signals.X08;
+    document.getElementById('k05').innerText = d.signals.K05;
+    document.getElementById('x03').innerText = d.signals.X03;
+    document.getElementById('upd').innerText = d.last_update;
+    // color logic
+    ['k03','k08','x05','x08','k05','x03','h1','m5'].forEach(id=>{
+      let el=document.getElementById(id); if(!el) return;
+      el.className='val'; if(el.innerText.includes('BUY')||el.innerText.includes('BULL')) el.classList.add('green');
+      if(el.innerText.includes('SELL')||el.innerText.includes('BEAR')) el.classList.add('red');
+    });
+  }catch(e){}
+}
+setInterval(load,2000); load();
+</script>
+</body>
+</html>
