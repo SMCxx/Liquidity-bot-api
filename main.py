@@ -1,91 +1,46 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
-import datetime
+from flask import Flask, jsonify
+from flask_cors import CORS
 import os
 
-app = FastAPI()
+app = Flask(__name__)
+CORS(app)  # <-- THIS FIXES "Awaiting connection"
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-bot_state = {
-    "status": "stopped",
-    "balance": 0,
-    "equity": 0,
-    "spread": 0,
-    "lot": 0,
+# This is what your frontend will read
+live_data = {
+    "balance": 0.00,
+    "equity": 0.00,
+    "spread": 0.00,
+    "lot": 0.00,
     "h1_trend": "WAIT",
     "m5_trend": "WAIT",
-    "float_pl": 0,
-    "high_float": 0,
-    "hold_hours": 0,
-    "open_positions": 0,
-    "strategy": "NONE",
+    "pnl": 0.00,
+    "positions": "0 / 6",
     "signals": {
-        "K03": "WAIT",
-        "K08": "WAIT",
-        "X05": "WAIT",
-        "X08": "WAIT",
-        "K05": "WAIT",
-        "X03": "WAIT"
+        "K03": "WAIT", "K08": "WAIT", "X05": "WAIT",
+        "X08": "WAIT", "K05": "WAIT", "X03": "WAIT"
     },
-    "active_strategies": 0,
-    "last_update": "",
-    "skip_reason": "Awaiting connection"
+    "status": "running"
 }
 
-class CommandRequest(BaseModel):
-    command: str
-    params: dict = {}
+@app.route('/')
+def home():
+    return jsonify({"status":"Liquidity X Bot API Running","version":"2.0"})
 
-@app.get("/")
-def root():
-    return {"status": "Liquidity X Bot API Running", "version": "2.0"}
+@app.route('/api/status')
+def status():
+    # HERE you put your real Deriv/MT5 logic to update live_data
+    return jsonify(live_data)
 
-@app.get("/status")
-def get_status():
-    return bot_state
+@app.route('/api/start')
+def start():
+    live_data["status"] = "running"
+    return jsonify({"msg": "Bot started"})
 
-@app.post("/command")
-def send_command(cmd: CommandRequest):
-    if cmd.command == "START":
-        bot_state["status"] = "running"
-        bot_state["last_update"] = str(datetime.datetime.now())
-        return {"message": "Bot started", "status": "running"}
-    elif cmd.command == "STOP":
-        bot_state["status"] = "stopped"
-        bot_state["last_update"] = str(datetime.datetime.now())
-        return {"message": "Bot stopped", "status": "stopped"}
-    elif cmd.command == "LOGIN":
-        bot_state["last_update"] = str(datetime.datetime.now())
-        return {"message": "Login processed", "status": "ok"}
-    else:
-        raise HTTPException(status_code=400, detail="Unknown command")
-
-@app.post("/signal-update")
-def update_signals(data: dict):
-    for key in data:
-        if key in bot_state and key != "signals":
-            bot_state[key] = data[key]
-        elif key == "signals":
-            if isinstance(data[key], dict):
-                for sig_key in data[key]:
-                    if sig_key in bot_state["signals"]:
-                        bot_state["signals"][sig_key] = data[key][sig_key]
-    bot_state["last_update"] = str(datetime.datetime.now())
-    return {"status": "updated"}
-
-@app.get("/signals")
-def get_signals():
-    return bot_state["signals"]
+@app.route('/api/stop')
+def stop():
+    live_data["status"] = "stopped"
+    return jsonify({"msg": "Bot stopped"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)
